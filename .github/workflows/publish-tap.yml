@@ -1,0 +1,34 @@
+name: Publish Homebrew Tap
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Homebrew
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $GITHUB_ENV
+
+      - name: Add brew to PATH
+        run: echo "${HOME}/.linuxbrew/bin" >> $GITHUB_PATH
+
+      - name: Audit & Test Formula
+        run: |
+          brew audit --strict Formula/identity-suite.rb
+          brew install --build-from-source Formula/identity-suite.rb
+          brew test identity-suite
+
+      - name: Publish to gh-pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./Formula
+          publish_branch: gh-pages
